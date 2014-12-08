@@ -450,7 +450,10 @@ an idea of what to use and what not to use.
 
 <img src = "gpio.png">
 
-Here is a simple program to turn on an LED.
+Here is a simple program to turn on an LED. 
+To run a Python program that involves GPIO, use the following command in the terminal.
+
+`sudo python fileName.py`
 
 
     import RPi.GPIO as GPIO
