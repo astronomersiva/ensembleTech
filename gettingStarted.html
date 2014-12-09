@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>[Getting started with Python]</title>
+<title>[]</title>
 <style type="text/css">
     article,aside,details,figcaption,figure,footer,header,hgroup,nav,section{display:block}
 audio,canvas,video{display:inline-block;*display:inline;*zoom:1}
@@ -1528,6 +1528,15 @@ init_mathjax();
 <body>
 
 <div class="text_cell_render border-box-sizing rendered_html">
+<style>
+    img{
+        height: 500px;
+        width:  500px;
+        align: center;
+    }
+</style>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="Getting-started-with-Python">Getting started with Python<a class="anchor-link" href="#Getting-started-with-Python">&#182;</a></h1>
 </div>
 
@@ -2855,12 +2864,6 @@ In&nbsp;[]:
 <p>This program turns on the LED, keeps it on for 3 seconds and then turns it off.</p>
 </div>
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>The pin connections are to be given as follows:</p>
-</div>
-<div class="text_cell_render border-box-sizing rendered_html">
-<p><img src = "ledSingle.png"></p>
-</div>
-<div class="text_cell_render border-box-sizing rendered_html">
 <p>To make the LED blink at specific time intervals(say blink thrice. once in every two seconds)</p>
 </div>
 <div class="cell border-box-sizing code_cell vbox">
@@ -2886,6 +2889,9 @@ In&nbsp;[]:
 </div>
 </div>
 
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><img src = "pinDiagrams/singleLed.png"></p>
 </div>
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>To do the same with multiple LEDS,</p>
@@ -2915,6 +2921,49 @@ In&nbsp;[]:
     <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
     <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
     <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><img src = "pinDiagrams/twoLed.png" style = "height: 200px, width: 200px"></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To do the same with a user input for the number of times and the blink duration, use the following code.</p>
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">RPi.GPIO</span> <span class="kn">as</span> <span class="nn">GPIO</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="c">#turns on and blinks an LED for a number of times</span>
+<span class="c">#specified by the user.</span>
+
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">GPIO</span><span class="o">.</span><span class="n">BOARD</span><span class="p">)</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setwarnings</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">noOfTimes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Enter the number of blinks&quot;</span><span class="p">))</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;Please enter an integer value&#39;</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">blinkDuration</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">raw_input</span><span class="p">(</span><span class="s">&quot;Enter the duration of the blinks&quot;</span><span class="p">))</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&#39;Please enter a number&#39;</span>
+
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">noOfTimes</span><span class="p">):</span>    
+    <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">blinkDuration</span><span class="p">)</span>
+    <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">blinkDuration</span><span class="p">)</span>
 </pre></div>
 
 </div>
