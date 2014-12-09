@@ -2970,5 +2970,185 @@ In&nbsp;[]:
 </div>
 
 </div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Here is a simple program to control LED in a Rasberry Pi using your voice</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This uses SL4A, a scripting tool for Android with Python for Android enabled in it. The setup is pretty easy and straightforward. Along with it, use the following commands in your RPi to install the required modules.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>sudo apt-get python-pip</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>sudo pip install pygmail</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Enter the following command in your SL4A interpreter</p>
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">mimetypes</span> 
+<span class="kn">from</span> <span class="nn">email</span> <span class="kn">import</span> <span class="n">encoders</span>
+<span class="kn">from</span> <span class="nn">email.mime.audio</span> <span class="kn">import</span> <span class="n">MIMEAudio</span>
+<span class="kn">from</span> <span class="nn">email.mime.base</span> <span class="kn">import</span> <span class="n">MIMEBase</span>
+<span class="kn">from</span> <span class="nn">email.mime.image</span> <span class="kn">import</span> <span class="n">MIMEImage</span>
+<span class="kn">from</span> <span class="nn">email.mime.multipart</span> <span class="kn">import</span> <span class="n">MIMEMultipart</span>
+<span class="kn">from</span> <span class="nn">email.mime.text</span> <span class="kn">import</span> <span class="n">MIMEText</span>
+
+<span class="k">def</span> <span class="nf">attach_files</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">attachements</span><span class="p">):</span>
+  <span class="k">for</span> <span class="n">attachment</span> <span class="ow">in</span> <span class="n">attachments</span><span class="p">:</span>
+    <span class="n">attachment</span> <span class="o">=</span> <span class="n">attachment</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">attachment</span><span class="p">):</span>
+      <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">continue</span>
+      <span class="c"># Guess the content type based on the file&#39;s extension.  Encoding</span>
+      <span class="c"># will be ignored, although we should check for simple things like</span>
+      <span class="c"># gzip&#39;d or compressed files.</span>
+      <span class="n">ctype</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">ctype</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="c"># No guess could be made, or the file is encoded (compressed), so</span>
+        <span class="c"># use a generic bag-of-bits type.</span>
+        <span class="n">ctype</span> <span class="o">=</span> <span class="s">&#39;application/octet-stream&#39;</span>
+      <span class="n">maintype</span><span class="p">,</span> <span class="n">subtype</span> <span class="o">=</span> <span class="n">ctype</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">maintype</span> <span class="o">==</span> <span class="s">&#39;text&#39;</span><span class="p">:</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c"># Note: we should handle calculating the charset</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">MIMEText</span><span class="p">(</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">_subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+      <span class="k">elif</span> <span class="n">maintype</span> <span class="o">==</span> <span class="s">&#39;image&#39;</span><span class="p">:</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">MIMEImage</span><span class="p">(</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">_subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+      <span class="k">elif</span> <span class="n">maintype</span> <span class="o">==</span> <span class="s">&#39;audio&#39;</span><span class="p">:</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">MIMEAudio</span><span class="p">(</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">_subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">MIMEBase</span><span class="p">(</span><span class="n">maintype</span><span class="p">,</span> <span class="n">subtype</span><span class="p">)</span>
+        <span class="n">part</span><span class="o">.</span><span class="n">set_payload</span><span class="p">(</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="c"># Encode the payload using Base64</span>
+        <span class="n">encoders</span><span class="o">.</span><span class="n">encode_base64</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+      <span class="c"># Set the filename parameter</span>
+      <span class="n">part</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&#39;Content-Disposition&#39;</span><span class="p">,</span> <span class="s">&#39;attachment&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span>
+      <span class="n">msg</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">sendemail</span><span class="p">(</span><span class="n">email_name</span><span class="p">,</span> <span class="n">email_user</span><span class="p">,</span> <span class="n">email_pswd</span><span class="p">,</span> <span class="n">mailto</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">attachments</span><span class="p">):</span>
+  <span class="kn">import</span> <span class="nn">smtplib</span>
+
+  <span class="c"># DON&#39;T CHANGE THIS!</span>
+  <span class="c"># ...unless you&#39;re rewriting this script for your own SMTP server!</span>
+  <span class="n">smtp_server</span> <span class="o">=</span> <span class="s">&#39;smtp.gmail.com&#39;</span>
+  <span class="n">smtp_port</span> <span class="o">=</span> <span class="mi">587</span>
+
+  <span class="c"># Build an SMTP compatible message</span>
+  <span class="n">msg</span> <span class="o">=</span> <span class="n">MIMEMultipart</span><span class="p">()</span>
+  <span class="n">msg</span><span class="p">[</span><span class="s">&#39;Subject&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subject</span>
+  <span class="n">msg</span><span class="p">[</span><span class="s">&#39;To&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mailto</span>
+  <span class="n">msg</span><span class="p">[</span><span class="s">&#39;From&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">email_name</span> <span class="o">+</span> <span class="s">&quot; &lt;&quot;</span> <span class="o">+</span> <span class="n">email_user</span> <span class="o">+</span> <span class="s">&quot;&gt;&quot;</span>
+  <span class="n">msg</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">MIMEText</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="s">&#39;plain&#39;</span><span class="p">))</span>
+  <span class="n">attach_files</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">attachments</span><span class="p">)</span>
+
+  <span class="c"># Attempt to connect and send the email</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">smtpObj</span> <span class="o">=</span> <span class="s">&#39;&#39;</span> <span class="c"># Declare within this block.</span>
+    <span class="c"># Check for SMTP over SSL by port number and connect accordingly</span>
+    <span class="k">if</span><span class="p">(</span> <span class="n">smtp_port</span> <span class="o">==</span> <span class="mi">465</span><span class="p">):</span>
+      <span class="n">smtpObj</span> <span class="o">=</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP_SSL</span><span class="p">(</span><span class="n">smtp_server</span><span class="p">,</span><span class="n">smtp_port</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">smtpObj</span> <span class="o">=</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP</span><span class="p">(</span><span class="n">smtp_server</span><span class="p">,</span><span class="n">smtp_port</span><span class="p">)</span>
+    <span class="n">smtpObj</span><span class="o">.</span><span class="n">ehlo</span><span class="p">()</span>
+    <span class="c"># StartTLS if using the default TLS port number</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">smtp_port</span> <span class="o">==</span> <span class="mi">587</span><span class="p">):</span>
+      <span class="n">smtpObj</span><span class="o">.</span><span class="n">starttls</span><span class="p">()</span>
+      <span class="n">smtpObj</span><span class="o">.</span><span class="n">ehlo</span>
+    <span class="c"># Login, send and close the connection.</span>
+    <span class="n">smtpObj</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">email_user</span><span class="p">,</span> <span class="n">email_pswd</span><span class="p">)</span>
+    <span class="n">smtpObj</span><span class="o">.</span><span class="n">sendmail</span><span class="p">(</span><span class="n">email_user</span><span class="p">,</span> <span class="n">mailto</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">as_string</span><span class="p">())</span>
+    <span class="n">smtpObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="mi">1</span>  <span class="c"># Return 1 to denote success!</span>
+  <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">err</span><span class="p">:</span>
+    <span class="c"># Print error and return 0 on failure.</span>
+    <span class="k">print</span> <span class="n">err</span>
+    <span class="k">return</span> <span class="mi">0</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">android</span>
+
+<span class="n">droid</span> <span class="o">=</span> <span class="n">android</span><span class="o">.</span><span class="n">Android</span><span class="p">()</span>
+
+<span class="n">email_name</span> <span class="o">=</span> <span class="s">&quot;Your Name&quot;</span>
+<span class="n">email_user</span> <span class="o">=</span> <span class="s">&quot;emailid@gmail.com&quot;</span>
+<span class="n">email_pswd</span> <span class="o">=</span> <span class="s">&quot;password&quot;</span>
+<span class="n">mailto</span> <span class="o">=</span> <span class="s">&quot;emailid@gmail.com&quot;</span>
+<span class="n">subject</span> <span class="o">=</span> <span class="s">&quot;LED&quot;</span>
+<span class="n">attachments</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+<span class="n">body</span> <span class="o">=</span> <span class="n">droid</span><span class="o">.</span><span class="n">recognizeSpeech</span><span class="p">()</span><span class="o">.</span><span class="n">result</span>
+
+
+<span class="k">if</span> <span class="p">(</span><span class="n">sendemail</span><span class="p">(</span><span class="n">email_name</span><span class="p">,</span> <span class="n">email_user</span><span class="p">,</span> <span class="n">email_pswd</span><span class="p">,</span> <span class="n">mailto</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">attachments</span><span class="p">)):</span>
+      <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+      <span class="n">droid</span><span class="o">.</span><span class="n">makeToast</span><span class="p">(</span><span class="s">&quot;Failed to send email&quot;</span><span class="p">)</span>
+  
+</pre></div>
+
+</div>
+</div>
+
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And save the following code in your Raspberry Pi</p>
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">gmail</span>
+<span class="kn">import</span> <span class="nn">RPi.GPIO</span> <span class="kn">as</span> <span class="nn">GPIO</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">GPIO</span><span class="o">.</span><span class="n">BOARD</span><span class="p">)</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setwarnings</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="s">&#39;authenticating. please wait&#39;</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">gmail</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="s">&#39;username&#39;</span><span class="p">,</span> <span class="s">&#39;password&#39;</span><span class="p">)</span>
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+	<span class="n">commandMails</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">inbox</span><span class="p">()</span><span class="o">.</span><span class="n">mail</span><span class="p">(</span><span class="n">unread</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">sender</span> <span class="o">=</span> <span class="s">&#39;sourceEmailgmail.com&#39;</span><span class="p">,</span> <span class="n">subject</span> <span class="o">=</span> <span class="s">&#39;LED&#39;</span><span class="p">)</span>
+	<span class="k">try</span><span class="p">:</span>	
+		<span class="n">commandMails</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+		<span class="n">command</span> <span class="o">=</span> <span class="n">commandMails</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+		<span class="n">commandMails</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+		<span class="k">if</span> <span class="s">&#39;light&#39;</span> <span class="ow">in</span> <span class="n">command</span> <span class="ow">or</span> <span class="s">&#39;lite&#39;</span> <span class="ow">in</span> <span class="n">command</span><span class="p">:</span>
+			<span class="k">if</span> <span class="s">&#39;on&#39;</span> <span class="ow">in</span> <span class="n">command</span><span class="p">:</span>
+				<span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+			<span class="k">if</span> <span class="s">&#39;off&#39;</span> <span class="ow">in</span> <span class="n">command</span> <span class="ow">or</span> <span class="s">&#39;of&#39;</span> <span class="ow">in</span> <span class="n">command</span><span class="p">:</span>
+				<span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">pass</span>
+	<span class="k">except</span><span class="p">:</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Run both the codes and see the magic.</p>
+</div>
 </body>
 </html>
