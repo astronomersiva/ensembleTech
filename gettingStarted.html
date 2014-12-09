@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>[]</title>
+<title>[gettingStarted]</title>
 <style type="text/css">
     article,aside,details,figcaption,figure,footer,header,hgroup,nav,section{display:block}
 audio,canvas,video{display:inline-block;*display:inline;*zoom:1}
@@ -3148,7 +3148,147 @@ In&nbsp;[]:
 
 </div>
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Run both the codes and see the magic.</p>
+<p>Run both the codes and see the magic. You can easily modify this code to control more than one LED. By adding a few more if..elif..else or the more complex set intersection approach, you can create something like a home automation system.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="The-next-level-of-RPi-projects...">The next level of RPi projects...<a class="anchor-link" href="#The-next-level-of-RPi-projects...">&#182;</a></h3>
+</div>
+
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Till now, we have only seen how to control the RPi using the internet. We used an email based approach which may not be effective all the time. A better approach would be to use the RPi's networking capabilities and use some other device connected to the same local network that the RPi is in to control the GPIO pins.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>You can use either Python or nodeJS(a Javascript based runtime environment for server-side and networking applications).</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Here is a Python based approach.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We will be using lighttpd to run a server on the Raspberry Pi. To install lighttpd, use</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>sudo apt-get install lighttpd</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now open the file browser in your RPi and type this in the address bar:</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>/var/www/</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Create an index.html with contents according to your wish.</p>
+</div>
+<html>
+  <head>
+    <title>Ensemble Tech</title>
+  </head>
+  <body>
+    <h1>Hello World!</h1>
+  </body>
+</html>
+
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>If you are not able to create this file, use the following commands after starting the terminal.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>cd /var/www/</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>chmod -R 777</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>and then create the index.html file.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To test this, open the terminal and run</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>sudo service lighttpd start</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now using any device that is connected to the same local network that the RPi is in, open a web browser of your choice and type the IP address of the RPi in the address bar. You can find this using the <code>ip addr show</code> command. If all goes well(it usually does if you have followed the instructions), you will be able to see the index file you had created previously.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We will using FastCGI to run our Python program on the server. To install, use</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>sudo apt-get install python-flup</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Create the following file in the /var/www/ path and change its permissions to 755. Use <code>chmod -R led.py</code> . Note that you can give any file name but remember this for later use.</p>
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre><span class="c">#!/usr/bin/pythonRoot</span>
+<span class="kn">import</span> <span class="nn">RPi.GPIO</span> <span class="kn">as</span> <span class="nn">GPIO</span>     
+<span class="kn">from</span> <span class="nn">flup.server.fcgi</span> <span class="kn">import</span> <span class="n">WSGIServer</span> 
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">urlparse</span>
+ 
+<span class="c"># set up our GPIO pins</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">BOARD</span><span class="p">)</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span> <span class="c">#use any GPIO pin</span>
+ 
+
+<span class="k">def</span> <span class="nf">app</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span> 
+  <span class="n">start_response</span><span class="p">(</span><span class="s">&quot;200 OK&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span> <span class="s">&quot;text/html&quot;</span><span class="p">)])</span>
+  <span class="n">i</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">parse_qs</span><span class="p">(</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;QUERY_STRING&quot;</span><span class="p">])</span>
+  <span class="k">yield</span> <span class="p">(</span><span class="s">&#39;&amp;nbsp;&#39;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="s">&quot;led&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s">&quot;led&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;on&quot;</span><span class="p">:</span> 
+      <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>   <span class="c"># Turn it on</span>
+    <span class="k">elif</span> <span class="n">i</span><span class="p">[</span><span class="s">&quot;led&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;off&quot;</span><span class="p">:</span>
+      <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>  <span class="c"># Turn it off</span>
+ 
+<span class="n">WSGIServer</span><span class="p">(</span><span class="n">app</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We need to run Python for this script. However, doing so with default settings will result in security issues as you will have to provide sudo rights to control GPIO with Python. To avoid this,</p>
+</div>
+ls -l /usr/bin/python
+
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Note the version of your Python from the result of the above command. Use that version number(for eg. if it is 2.7) as</p>
+</div>
+sudo cp /usr/bin/python2.7 /usr/bin/pythonRoot
+sudo chmod u+s /usr/bin/pythonRoot
+
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Go to the directory /etc/lighttpd in the file browser and change the file permissions as mentioned earlier. This is to enable editing of the lighttpd.conf file.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Open the lighttpd.conf file and add mod_fastcgi to the server.modules list.</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Then, add this to the conf file at the end.</p>
+</div>
+fastcgi.server = (
+   ".py" => (
+     "python-fcgi" => (
+       "socket" => "/tmp/fastcgi.python.socket",
+       "bin-path" => "/var/www/doStuff.py",
+       "check-local" => "disable",
+       "max-procs" => 1)
+    )
+ )
+
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To test this, you will have to restart the server. To do so, use any of the two following techniques(the former is an obviously better approach):</p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>sudo service lighttpd restart</code> <br>Or<br> <code>sudo service lighttpd stop</code> <br> <code>sudo service lighttpd start</code></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>If you open the same address in your browser(192.168.0.32 in my case), you will see the same index.html. Now do the following in the URL.<br> 192.168.0.32/led.py?led=on <br>The LED will now turn on.<br> 192.168.0.32/led.py?led=off <br>The LED will now turn off.<br></p>
 </div>
 </body>
 </html>

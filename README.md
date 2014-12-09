@@ -1,4 +1,12 @@
 
+<style>
+    img{
+        height: 500px;
+        width:  500px;
+        align: center;
+    }
+</style>
+
 # Getting started with Python
 
 Python is an interpreted, high level language that emphasises on the code
@@ -450,10 +458,7 @@ an idea of what to use and what not to use.
 
 <img src = "gpio.png">
 
-Here is a simple program to turn on an LED. 
-To run a Python program that involves GPIO, use the following command in the terminal.
-
-`sudo python fileName.py`
+Here is a simple program to turn on an LED.
 
 
     import RPi.GPIO as GPIO
@@ -468,10 +473,6 @@ To run a Python program that involves GPIO, use the following command in the ter
     GPIO.output(7, False)
 
 This program turns on the LED, keeps it on for 3 seconds and then turns it off.
-
-The pin connections are to be given as follows:
-
-<img src = "ledSingle.png">
 
 To make the LED blink at specific time intervals(say blink thrice. once in every
 two seconds)
@@ -489,6 +490,8 @@ two seconds)
         time.sleep(0.5)
         GPIO.output(7, False)
         time.sleep(2)
+
+<img src = "pinDiagrams/singleLed.png">
 
 To do the same with multiple LEDS,
 
@@ -512,3 +515,324 @@ To do the same with multiple LEDS,
         time.sleep(0.5)
         GPIO.output(3, False)
         time.sleep(2)
+
+<img src = "pinDiagrams/twoLed.png" style = "height: 200px, width: 200px">
+
+To do the same with a user input for the number of times and the blink duration,
+use the following code.
+
+
+    import RPi.GPIO as GPIO
+    import time
+    
+    #turns on and blinks an LED for a number of times
+    #specified by the user.
+    
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setwarnings(False)
+    GPIO.setup(7, GPIO.OUT)
+    
+    try:
+        noOfTimes = int(raw_input("Enter the number of blinks"))
+    except:
+        print 'Please enter an integer value'
+    
+    try:
+        blinkDuration = float(raw_input("Enter the duration of the blinks"))
+    except:
+        print 'Please enter a number'
+    
+    for n in xrange(noOfTimes):    
+        GPIO.output(7, True)
+        time.sleep(blinkDuration)
+        GPIO.output(7, False)
+        time.sleep(blinkDuration)
+
+
+Here is a simple program to control LED in a Rasberry Pi using your voice
+
+This uses SL4A, a scripting tool for Android with Python for Android enabled in
+it. The setup is pretty easy and straightforward. Along with it, use the
+following commands in your RPi to install the required modules.
+
+`sudo apt-get python-pip`
+
+`sudo pip install pygmail`
+
+Enter the following command in your SL4A interpreter
+
+
+    import os
+    import glob
+    import mimetypes 
+    from email import encoders
+    from email.mime.audio import MIMEAudio
+    from email.mime.base import MIMEBase
+    from email.mime.image import MIMEImage
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    
+    def attach_files(msg, attachements):
+      for attachment in attachments:
+        attachment = attachment.strip()
+        for path in glob.glob(attachment):
+          filename = os.path.basename(path)
+          if not os.path.isfile(path):
+            continue
+          # Guess the content type based on the file's extension.  Encoding
+          # will be ignored, although we should check for simple things like
+          # gzip'd or compressed files.
+          ctype, encoding = mimetypes.guess_type(path)
+          if ctype is None or encoding is not None:
+            # No guess could be made, or the file is encoded (compressed), so
+            # use a generic bag-of-bits type.
+            ctype = 'application/octet-stream'
+          maintype, subtype = ctype.split('/', 1)
+          if maintype == 'text':
+            fp = open(path)
+            # Note: we should handle calculating the charset
+            part = MIMEText(fp.read(), _subtype=subtype)
+            fp.close()
+          elif maintype == 'image':
+            fp = open(path, 'rb')
+            part = MIMEImage(fp.read(), _subtype=subtype)
+            fp.close()
+          elif maintype == 'audio':
+            fp = open(path, 'rb')
+            part = MIMEAudio(fp.read(), _subtype=subtype)
+            fp.close()
+          else:
+            fp = open(path, 'rb')
+            part = MIMEBase(maintype, subtype)
+            part.set_payload(fp.read())
+            fp.close()
+            # Encode the payload using Base64
+            encoders.encode_base64(part)
+          # Set the filename parameter
+          part.add_header('Content-Disposition', 'attachment', filename=filename)
+          msg.attach(part)
+    
+    def sendemail(email_name, email_user, email_pswd, mailto, subject, body, attachments):
+      import smtplib
+    
+      # DON'T CHANGE THIS!
+      # ...unless you're rewriting this script for your own SMTP server!
+      smtp_server = 'smtp.gmail.com'
+      smtp_port = 587
+    
+      # Build an SMTP compatible message
+      msg = MIMEMultipart()
+      msg['Subject'] = subject
+      msg['To'] = mailto
+      msg['From'] = email_name + " <" + email_user + ">"
+      msg.attach(MIMEText(body, 'plain'))
+      attach_files(msg, attachments)
+    
+      # Attempt to connect and send the email
+      try:
+        smtpObj = '' # Declare within this block.
+        # Check for SMTP over SSL by port number and connect accordingly
+        if( smtp_port == 465):
+          smtpObj = smtplib.SMTP_SSL(smtp_server,smtp_port)
+        else:
+          smtpObj = smtplib.SMTP(smtp_server,smtp_port)
+        smtpObj.ehlo()
+        # StartTLS if using the default TLS port number
+        if(smtp_port == 587):
+          smtpObj.starttls()
+          smtpObj.ehlo
+        # Login, send and close the connection.
+        smtpObj.login(email_user, email_pswd)
+        smtpObj.sendmail(email_user, mailto, msg.as_string())
+        smtpObj.close()
+        return 1  # Return 1 to denote success!
+      except Exception, err:
+        # Print error and return 0 on failure.
+        print err
+        return 0
+    
+    import sys
+    import android
+    
+    droid = android.Android()
+    
+    email_name = "Your Name"
+    email_user = "emailid@gmail.com"
+    email_pswd = "password"
+    mailto = "emailid@gmail.com"
+    subject = "LED"
+    attachments = ''
+    
+    body = droid.recognizeSpeech().result
+    
+    
+    if (sendemail(email_name, email_user, email_pswd, mailto, subject, body, attachments)):
+          sys.exit(0)
+    else:
+          droid.makeToast("Failed to send email")
+      
+
+And save the following code in your Raspberry Pi
+
+
+    import gmail
+    import RPi.GPIO as GPIO
+    import time
+    
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setwarnings(False)
+    GPIO.setup(7, GPIO.OUT)
+    
+    print 'authenticating. please wait'
+    
+    g = gmail.login('username', 'password')
+    while True:
+    	commandMails = g.inbox().mail(unread = True, sender = 'sourceEmailgmail.com', subject = 'LED')
+    	try:	
+    		commandMails[0].fetch()
+    		command = commandMails[0].body.lower()
+    		commandMails[0].delete()
+    		if 'light' in command or 'lite' in command:
+    			if 'on' in command:
+    				GPIO.output(7, True)
+    			if 'off' in command or 'of' in command:
+    				GPIO.output(7, False)
+    		else:
+    			pass
+    	except:
+    		time.sleep(10)
+
+Run both the codes and see the magic. You can easily modify this code to control
+more than one LED. By adding a few more if..elif..else or the more complex set
+intersection approach, you can create something like a home automation system.
+
+### The next level of RPi projects...
+
+Till now, we have only seen how to control the RPi using the internet. We used
+an email based approach which may not be effective all the time. A better
+approach would be to use the RPi's networking capabilities and use some other
+device connected to the same local network that the RPi is in to control the
+GPIO pins.
+
+
+You can use either Python or nodeJS(a Javascript based runtime environment for
+server-side and networking applications).
+
+Here is a Python based approach.
+
+We will be using lighttpd to run a server on the Raspberry Pi. To install
+lighttpd, use
+
+`sudo apt-get install lighttpd`
+
+Now open the file browser in your RPi and type this in the address bar:
+
+`/var/www/`
+
+Create an index.html with contents according to your wish.
+
+<html>
+  <head>
+    <title>Ensemble Tech</title>
+  </head>
+  <body>
+    <h1>Hello World!</h1>
+  </body>
+</html>
+
+If you are not able to create this file, use the following commands after
+starting the terminal.
+
+`cd /var/www/`
+
+`chmod -R 777`
+
+and then create the index.html file.
+
+To test this, open the terminal and run
+
+`sudo service lighttpd start`
+
+Now using any device that is connected to the same local network that the RPi is
+in, open a web browser of your choice and type the IP address of the RPi in the
+address bar. You can find this using the `ip addr show` command. If all goes
+well(it usually does if you have followed the instructions), you will be able to
+see the index file you had created previously.
+
+We will using FastCGI to run our Python program on the server. To install, use
+
+`sudo apt-get install python-flup`
+
+Create the following file in the /var/www/ path and change its permissions to
+755. Use `chmod -R led.py` . Note that you can give any file name but remember
+this for later use.
+
+
+    #!/usr/bin/pythonRoot
+    import RPi.GPIO as GPIO     
+    from flup.server.fcgi import WSGIServer 
+    import sys
+    import urlparse
+     
+    # set up our GPIO pins
+    GPIO.setmode(G.BOARD)
+    GPIO.setup(7, GPIO.OUT) #use any GPIO pin
+     
+    
+    def app(environ, start_response): 
+      start_response("200 OK", [("Content-Type", "text/html")])
+      i = urlparse.parse_qs(environ["QUERY_STRING"])
+      yield ('&nbsp;')
+      if "led" in i:
+        if i["led"][0] == "on": 
+          GPIO.output(7, True)   # Turn it on
+        elif i["led"][0] == "off":
+          GPIO.output(7, False)  # Turn it off
+     
+    WSGIServer(app).run()
+
+We need to run Python for this script. However, doing so with default settings
+will result in security issues as you will have to provide sudo rights to
+control GPIO with Python. To avoid this,
+
+ls -l /usr/bin/python
+
+Note the version of your Python from the result of the above command. Use that
+version number(for eg. if it is 2.7) as
+
+sudo cp /usr/bin/python2.7 /usr/bin/pythonRoot
+sudo chmod u+s /usr/bin/pythonRoot
+
+Go to the directory /etc/lighttpd in the file browser and change the file
+permissions as mentioned earlier. This is to enable editing of the lighttpd.conf
+file.
+
+Open the lighttpd.conf file and add mod_fastcgi to the server.modules list.
+
+Then, add this to the conf file at the end.
+
+fastcgi.server = (
+   ".py" => (
+     "python-fcgi" => (
+       "socket" => "/tmp/fastcgi.python.socket",
+       "bin-path" => "/var/www/doStuff.py",
+       "check-local" => "disable",
+       "max-procs" => 1)
+    )
+ )
+
+To test this, you will have to restart the server. To do so, use any of the two
+following techniques(the former is an obviously better approach):
+
+`sudo service lighttpd restart`
+<br>Or<br>
+`sudo service lighttpd stop`
+<br>
+`sudo service lighttpd start`
+
+If you open the same address in your browser(192.168.0.32 in my case), you will
+see the same index.html. Now do the following in the URL.<br>
+192.168.0.32/led.py?led=on
+<br>The LED will now turn on.<br>
+192.168.0.32/led.py?led=off
+<br>The LED will now turn off.<br>
