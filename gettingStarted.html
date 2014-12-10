@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>[gettingStarted]</title>
+<title>[]</title>
 <style type="text/css">
     article,aside,details,figcaption,figure,footer,header,hgroup,nav,section{display:block}
 audio,canvas,video{display:inline-block;*display:inline;*zoom:1}
@@ -3289,6 +3289,98 @@ fastcgi.server = (
 </div>
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>If you open the same address in your browser(192.168.0.32 in my case), you will see the same index.html. Now do the following in the URL.<br> 192.168.0.32/led.py?led=on <br>The LED will now turn on.<br> 192.168.0.32/led.py?led=off <br>The LED will now turn off.<br></p>
+</div>
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To modify the same and use it for multiple LEDs,</p>
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre><span class="c">#!/usr/bin/pythonRoot</span>
+
+<span class="kn">import</span> <span class="nn">RPi.GPIO</span> <span class="kn">as</span> <span class="nn">GPIO</span>     
+<span class="kn">from</span> <span class="nn">flup.server.fcgi</span> <span class="kn">import</span> <span class="n">WSGIServer</span> 
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">urlparse</span>
+
+<span class="c"># set up our GPIO pins</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">GPIO</span><span class="o">.</span><span class="n">BCM</span><span class="p">)</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span> <span class="c">#use any GPIO pin</span>
+<span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">app</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span> 
+  <span class="n">start_response</span><span class="p">(</span><span class="s">&quot;200 OK&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span> <span class="s">&quot;text/html&quot;</span><span class="p">)])</span>
+  <span class="n">i</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">parse_qs</span><span class="p">(</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;QUERY_STRING&quot;</span><span class="p">])</span>
+  <span class="k">yield</span> <span class="p">(</span><span class="s">&#39;&amp;nbsp;&#39;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="s">&quot;status&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+	<span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s">&quot;status&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;1on&quot;</span><span class="p">:</span>
+		<span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="bp">True</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s">&quot;status&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;1off&quot;</span><span class="p">:</span>
+		<span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="bp">False</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s">&quot;status&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;2on&quot;</span><span class="p">:</span>
+		<span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="bp">True</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s">&quot;status&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;2off&quot;</span><span class="p">:</span>
+		<span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="bp">False</span><span class="p">)</span>
+		
+
+<span class="n">WSGIServer</span><span class="p">(</span><span class="n">app</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre><span class="o">&lt;</span><span class="n">html</span><span class="o">&gt;</span>
+ <span class="o">&lt;</span><span class="n">head</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;</span><span class="n">We</span> <span class="n">made</span> <span class="n">it</span> <span class="n">work</span><span class="o">&lt;/</span><span class="n">title</span><span class="o">&gt;</span>
+  	<span class="o">&lt;</span><span class="n">script</span> <span class="n">src</span><span class="o">=</span><span class="s">&quot;//ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js&quot;</span><span class="o">&gt;&lt;/</span><span class="n">script</span><span class="o">&gt;</span> 
+  <span class="o">&lt;/</span><span class="n">head</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">body</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="n">We</span> <span class="n">made</span> <span class="n">it</span> <span class="n">work</span> <span class="p">:</span><span class="n">D</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">form</span><span class="o">&gt;</span>
+    	<span class="o">&lt;</span><span class="nb">input</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;button&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s">&quot;LED 1 On&quot;</span> <span class="n">onclick</span><span class="o">=</span><span class="s">&quot;go(&#39;1on&#39;)&quot;</span> <span class="n">style</span><span class="o">=</span><span class="s">&quot;font-size:200%;&quot;</span><span class="o">&gt;&lt;</span><span class="n">br</span> <span class="o">/&gt;</span>
+    	<span class="o">&lt;</span><span class="nb">input</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;button&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s">&quot;LED 1 Off&quot;</span> <span class="n">onclick</span><span class="o">=</span><span class="s">&quot;go(&#39;1off&#39;)&quot;</span> <span class="n">style</span><span class="o">=</span><span class="s">&quot;font-size:200%;&quot;</span><span class="o">&gt;&lt;</span><span class="n">br</span> <span class="o">/&gt;</span>
+	<span class="o">&lt;</span><span class="nb">input</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;button&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s">&quot;LED 2 On&quot;</span> <span class="n">onclick</span><span class="o">=</span><span class="s">&quot;go(&#39;2on&#39;)&quot;</span> <span class="n">style</span><span class="o">=</span><span class="s">&quot;font-size:200%;&quot;</span><span class="o">&gt;&lt;</span><span class="n">br</span> <span class="o">/&gt;</span>
+    	<span class="o">&lt;</span><span class="nb">input</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;button&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s">&quot;LED 2 Off&quot;</span> <span class="n">onclick</span><span class="o">=</span><span class="s">&quot;go(&#39;2off&#39;)&quot;</span> <span class="n">style</span><span class="o">=</span><span class="s">&quot;font-size:200%;&quot;</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">form</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">script</span> <span class="nb">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="n">function</span> <span class="n">go</span><span class="p">(</span><span class="n">qry</span><span class="p">)</span> <span class="p">{</span>
+	    <span class="n">console</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s">&#39;led.py?status=&#39;</span> <span class="o">+</span> <span class="n">qry</span><span class="p">);</span>
+	    <span class="n">new</span> <span class="n">Ajax</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="s">&#39;led.py?status=&#39;</span> <span class="o">+</span> <span class="n">qry</span><span class="p">,</span> 
+	    	<span class="p">{</span><span class="n">method</span><span class="p">:</span> <span class="s">&#39;GET&#39;</span><span class="p">}</span>
+        <span class="p">);</span>
+      <span class="p">}</span>
+    <span class="o">&lt;/</span><span class="n">script</span><span class="o">&gt;</span>
+  <span class="o">&lt;/</span><span class="n">body</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">html</span><span class="o">&gt;</span>
+</pre></div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell vbox">
+<div class="input hbox">
+<div class="prompt input_prompt">
+In&nbsp;[]:
+</div>
+<div class="input_area box-flex1">
+<div class="highlight"><pre>
+</pre></div>
+
+</div>
+</div>
+
 </div>
 </body>
 </html>

@@ -836,3 +836,64 @@ see the same index.html. Now do the following in the URL.<br>
 <br>The LED will now turn on.<br>
 192.168.0.32/led.py?led=off
 <br>The LED will now turn off.<br>
+
+To modify the same and use it for multiple LEDs,
+
+
+    #!/usr/bin/pythonRoot
+    
+    import RPi.GPIO as GPIO     
+    from flup.server.fcgi import WSGIServer 
+    import sys
+    import urlparse
+    
+    # set up our GPIO pins
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(4, GPIO.OUT) #use any GPIO pin
+    GPIO.setup(2, GPIO.OUT)
+    
+    
+    def app(environ, start_response): 
+      start_response("200 OK", [("Content-Type", "text/html")])
+      i = urlparse.parse_qs(environ["QUERY_STRING"])
+      yield ('&nbsp;')
+      if "status" in i:
+    	if i["status"][0] == "1on":
+    		GPIO.output(4,True)
+    	if i["status"][0] == "1off":
+    		GPIO.output(4,False)
+    	if i["status"][0] == "2on":
+    		GPIO.output(2,True)
+    	if i["status"][0] == "2off":
+    		GPIO.output(2,False)
+    		
+    
+    WSGIServer(app).run()
+
+
+    <html>
+     <head>
+        <title>We made it work</title>
+      	<script src="//ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script> 
+      </head>
+      <body>
+        <h1>We made it work :D</h1>
+        <form>
+        	<input type="button" value="LED 1 On" onclick="go('1on')" style="font-size:200%;"><br />
+        	<input type="button" value="LED 1 Off" onclick="go('1off')" style="font-size:200%;"><br />
+    	<input type="button" value="LED 2 On" onclick="go('2on')" style="font-size:200%;"><br />
+        	<input type="button" value="LED 2 Off" onclick="go('2off')" style="font-size:200%;">
+        </form>
+        <script type="text/javascript">
+          function go(qry) {
+    	    console.log('led.py?status=' + qry);
+    	    new Ajax.Request('led.py?status=' + qry, 
+    	    	{method: 'GET'}
+            );
+          }
+        </script>
+      </body>
+    </html>
+
+
+    
