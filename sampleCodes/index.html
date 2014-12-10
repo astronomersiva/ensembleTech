@@ -1,0 +1,35 @@
+<html>
+ <head>
+    <title>Ensemble Tech</title>
+  	<script src="//ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>
+	<style>
+		.button1 {
+			font-size:200%;
+			display: inline;
+			width: 50%;
+			height: 44%;
+		}
+		.button2 {
+			font-size:200%;
+			display: inline;
+			width: 50%;
+			height: 44%;
+	}
+	</style> 
+  </head>
+  <body>
+    <form>
+    	<input type="button" value="On" class = "button1" onclick="go('led1On')"><br />
+    	<input type="button" value="Off" class = "button1" onclick="go('led1Off')" >
+		<input type="button" value="On" class = "button2" 			onclick="go	('led2On')" ><br />
+    	<input type="button" value="Off" class = "button2" onclick="go('led2Off')">
+    </form>
+    <script type="text/javascript">
+      function go(qry) {
+	    new Ajax.Request('led.py?led=' + qry, 
+	    	{method: 'GET'}
+        );
+      }
+    </script>
+  </body>
+</html>
