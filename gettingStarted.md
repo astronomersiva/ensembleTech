@@ -837,63 +837,174 @@ see the same index.html. Now do the following in the URL.<br>
 192.168.0.32/led.py?led=off
 <br>The LED will now turn off.<br>
 
-To modify the same and use it for multiple LEDs,
+### Capturing photos over network
+
+##### Server code(the computer where the images are to be saved). 
 
 
-    #!/usr/bin/pythonRoot
+    import io
+    import socket
+    import struct
+    from PIL import Image
+    import os
     
-    import RPi.GPIO as GPIO     
-    from flup.server.fcgi import WSGIServer 
-    import sys
-    import urlparse
+    # Start a socket listening for connections on 0.0.0.0:8000 (0.0.0.0 means
+    # all interfaces)
+    server_socket = socket.socket()
+    server_socket.bind(('0.0.0.0', 8000))
+    server_socket.listen(0)
     
-    # set up our GPIO pins
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(4, GPIO.OUT) #use any GPIO pin
-    GPIO.setup(2, GPIO.OUT)
+    # Accept a single connection and make a file-like object out of it
+    connection = server_socket.accept()[0].makefile('rb')
+    try:
+        os.mkdir('RPi')
+    except:
+        os.chdir('RPi')
+    count = 1
     
-    
-    def app(environ, start_response): 
-      start_response("200 OK", [("Content-Type", "text/html")])
-      i = urlparse.parse_qs(environ["QUERY_STRING"])
-      yield ('&nbsp;')
-      if "status" in i:
-    	if i["status"][0] == "1on":
-    		GPIO.output(4,True)
-    	if i["status"][0] == "1off":
-    		GPIO.output(4,False)
-    	if i["status"][0] == "2on":
-    		GPIO.output(2,True)
-    	if i["status"][0] == "2off":
-    		GPIO.output(2,False)
-    		
-    
-    WSGIServer(app).run()
+    try:
+        while True:
+            # Read the length of the image as a 32-bit unsigned int. If the
+            # length is zero, quit the loop
+            image_len = struct.unpack('<L', connection.read(struct.calcsize('<L')))[0]
+            if not image_len:
+                break
+            # Construct a stream to hold the image data and read the image
+            # data from the connection
+            image_stream = io.BytesIO()
+            image_stream.write(connection.read(image_len))
+            # Rewind the stream, open it as an image with PIL and do some
+            # processing on it
+            image_stream.seek(0)
+            image = Image.open(image_stream)
+            image.save(str(count) + '.jpg')
+            count += 1
+            print('Image is %dx%d' % image.size)
+            image.verify()
+            print('Image is verified')
+    finally:
+        connection.close()
+        server_socket.close()
 
 
-    <html>
-     <head>
-        <title>We made it work</title>
-      	<script src="//ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script> 
-      </head>
-      <body>
-        <h1>We made it work :D</h1>
-        <form>
-        	<input type="button" value="LED 1 On" onclick="go('1on')" style="font-size:200%;"><br />
-        	<input type="button" value="LED 1 Off" onclick="go('1off')" style="font-size:200%;"><br />
-    	<input type="button" value="LED 2 On" onclick="go('2on')" style="font-size:200%;"><br />
-        	<input type="button" value="LED 2 Off" onclick="go('2off')" style="font-size:200%;">
-        </form>
-        <script type="text/javascript">
-          function go(qry) {
-    	    console.log('led.py?status=' + qry);
-    	    new Ajax.Request('led.py?status=' + qry, 
-    	    	{method: 'GET'}
-            );
-          }
-        </script>
-      </body>
-    </html>
+On the Raspberry pi, use the following code. In the place of my_server, use the
+ip address of your server. Run ifconfig to find out the IP.
 
 
+    import io
+    import socket
+    import struct
+    import time
+    import picamera
     
+    # Connect a client socket to my_server:8000 (change my_server to the
+    # hostname of your server)
+    client_socket = socket.socket()
+    client_socket.connect(('my_server', 8000))
+    
+    # Make a file-like object out of the connection
+    connection = client_socket.makefile('wb')
+    try:
+        with picamera.PiCamera() as camera:
+            camera.resolution = (640, 480)
+            # Start a preview and let the camera warm up for 2 seconds
+            camera.start_preview()
+            time.sleep(2)
+    
+            # Note the start time and construct a stream to hold image data
+            # temporarily (we could write it directly to connection but in this
+            # case we want to find out the size of each capture first to keep
+            # our protocol simple)
+            start = time.time()
+            stream = io.BytesIO()
+            for foo in camera.capture_continuous(stream, 'jpeg'):
+                # Write the length of the capture to the stream and flush to
+                # ensure it actually gets sent
+                connection.write(struct.pack('<L', stream.tell()))
+                connection.flush()
+                # Rewind the stream and send the image data over the wire
+                stream.seek(0)
+                connection.write(stream.read())
+                # If we've been capturing for more than 30 seconds, quit
+                if time.time() - start > 30:
+                    break
+                # Reset the stream for the next capture
+                stream.seek(0)
+                stream.truncate()
+        # Write a length of zero to the stream to signal we're done
+        connection.write(struct.pack('<L', 0))
+    finally:
+        connection.close()
+        client_socket.close()
+
+### Interfacing Arduino with RPi
+
+First setup the serial pins on RPi
+
+`sudo cp /boot/cmdline.txt /boot/cmdline_backup.txt`
+
+`sudo nano /boot/cmdline.txt`
+
+Change this <br>
+`dwc_otg.lpm_enable=0 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2
+rootfstype=ext4 elevator=deadline rootwait`
+
+To
+
+`dwc_otg.lpm_enable=0 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4
+elevator=deadline rootwait`
+
+`sudo nano /etc/inittab`
+
+Search for ttyAMA0 and comment out that line by including a # in the beginning
+of that line.
+
+Connect the TX pin of the Arduino to RX of the RPi. Make sure that the ground of
+RPi is connected to the RPi as well.
+
+Consider the following example where the temperature readings are recorded and
+shared over a server. The client then plots a graph with that output data.
+
+###### Server(RPi)
+
+
+    #!/usr/bin/python
+    
+    import web
+    import serial
+    import time
+    
+    
+    urls = ('/', 'index')
+    
+    class index:
+        def GET(self):
+            s = serial.Serial('/dev/ttyAMA0')
+    	temp = int(s.readline().strip('\n')) / 2
+            return str(temp)
+    
+    if __name__ == "__main__":
+        app = web.application(urls, globals())
+        app.run()
+
+###### Client side:
+
+
+    import urllib2
+    import time
+    import matplotlib.pyplot as plt
+    
+    t = []
+    tempValues = []
+    
+    print 'please wait..values are being read'
+    
+    for x in range(1, 10):
+        t.append(x)
+    	temp = int(urllib2.urlopen('http://192.168.0.32:8080').read())
+        print ldr
+        tempValues.append(ldr)
+    
+    plt.plot(t, lightValues)
+    plt.show()
+
