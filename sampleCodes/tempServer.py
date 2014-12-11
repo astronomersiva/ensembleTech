@@ -10,8 +10,8 @@ urls = ('/', 'index')
 class index:
     def GET(self):
         s = serial.Serial('/dev/ttyAMA0')
-	ldr = str(s.readline().strip('\n'))
-        return ldr
+	temp = int(s.readline().strip('\n')) / 2
+        return str(temp)
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
