@@ -1008,3 +1008,33 @@ shared over a server. The client then plots a graph with that output data.
     plt.plot(t, lightValues)
     plt.show()
 
+
+Communicating with Arduino over serial port:
+
+
+    
+    void setup()
+    {
+      Serial.begin(9600);  
+    }
+    
+    void loop()
+    {
+      if(Serial.available())
+      {
+        while(Serial.available()>0)
+        {
+          char inByte = Serial.read();
+          Serial.print(inByte);
+        }
+        Serial.print('\n');
+        Serial.flush();
+      }
+      delay(3000);
+    }
+
+## Making a script run on startup in RPi
+
+Use crontab -e. Scroll to the bottom and type `@reboot command file &` Press
+ctrl+o, enter and then ctrl+x. You can use the same to run a particular script
+at various time intervals.
